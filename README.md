@@ -12,6 +12,5 @@ El objetivo es documentar mi progreso, aplicar los conceptos aprendidos y manten
 - **Trabajos prácticos (TPs):** Ejercicios y proyectos entregados en distintas materias.
 - **Ejercicios individuales:** Prácticas para afianzar conceptos de programación.
 - **Proyectos integradores:** Desarrollos más completos que combinan múltiples tecnologías.
-- **Apuntes y referencias:** Notas y material útil para reforzar el aprendizaje.
 
 ---
