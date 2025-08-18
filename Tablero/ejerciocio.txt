@@ -1,1 +1,7 @@
-Actividad en la cual se requiere aplicar la abstracción de un juego con dado, turnos y tablero
+Actividad en la cual se requiere aplicar la abstracción de un juego con dado, turnos y tablero.
+Se necesita que desarrolle un juego interactivo entre dos o mas integrantes, en el cual la rutina debe ser la siguiente:
+1- Cada integrante (Personaje) debe tirar el dado y el jugador que obtenga el dado mas alto comienza el juego, luego el que obtuvo el segundo dado más alto y así sucesivamente, con un límite de 6  jugadores como máximo.
+2.- Crear un Tablero de 10 0 15 casillas.
+3.- Cada casilla del tablero puede tener alguna acción especial o no (retroceda 1 casilla, pierde el turno, tire otra vez, avance hasta la casilla 13, etc), la acción de las casillas está librada al ingenio de cada alumno.
+
+Puede tomar como inicio los archivos del Repositorio de Github: https://github.com/TDSoftwareUTNFRVT/programacionII-2025
