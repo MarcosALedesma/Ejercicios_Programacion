@@ -1,1 +1,1 @@
-
+Actividad en la cual se requiere aplicar la abstracción de un juego con dado, turnos y tablero
