@@ -1,129 +1,104 @@
-#pj.py
+# personaje.py
 import random
-from clear_cli import clear  
+import sys
+import os
+
+# Agregar el directorio raíz al path para importar desde api
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from api.dnd_api import obtener_races, obtener_classes, obtener_race_detalle
 
 class Personaje:
-    def __init__(self, nombre):
+    def __init__(self, nombre, raza, clase, stats):
         self.nombre = nombre
-        self.nivel = 1
-        self.xp = 0
-        self.vida = 100
+        self.raza = raza
+        self.clase = clase
+        self.stats = stats
 
-        self.fuerza = self.rolear_stats()
-        self.destreza = self.rolear_stats()
-        self.inteligencia = self.rolear_stats()
-        self.defensa = self.rolear_stats()
-
-    def rolear_stats(self):
-        dados = [random.randint(1, 6) for _ in range(6)]
-        dados.remove(min(dados))
-        return sum(dados)
+    def __str__(self):
+        return f"Nombre: {self.nombre}, Raza: {self.raza}, Clase: {self.clase}, Stats: {self.stats}"
 
     def show_stats(self):
         print()
-        print("Statsbase".center(21))
+        print("Stats Base".center(21))
         print("╔"+("═" * 20)+"╗")
         print(f"║Nombre: {self.nombre}".ljust(21)+"║")
-        print(f"║Nivel: {self.nivel}".ljust(21)+"║")
-        print(f"║XP: {self.xp}".ljust(21)+"║")
+        print(f"║Raza: {self.raza}".ljust(21)+"║")
+        print(f"║Clase: {self.clase}".ljust(21)+"║")
         print("║"+("═"* 20)+"║")
-        print(f"║Fuerza: {self.fuerza}".ljust(21)+"║")
-        print(f"║Destreza: {self.destreza}".ljust(21)+"║")
-        print(f"║Inteligencia: {self.inteligencia}".ljust(21)+"║")
-        print(f"║Defensa: {self.defensa}".ljust(21)+"║")
-        print(f"║Vida: {self.vida}".ljust(21)+"║")
+        print(f"║Fuerza: {self.stats['strength']}".ljust(21)+"║")
+        print(f"║Destreza: {self.stats['dexterity']}".ljust(21)+"║")
+        print(f"║Constitución: {self.stats['constitution']}".ljust(21)+"║")
+        print(f"║Inteligencia: {self.stats['intelligence']}".ljust(21)+"║")
+        print(f"║Sabiduría: {self.stats['wisdom']}".ljust(21)+"║")
+        print(f"║Carisma: {self.stats['charisma']}".ljust(21)+"║")
         print("╚"+("═" * 20)+"╝")
 
-    def habilidad_especial(self):
-        print(f"{self.nombre} no tiene habilidad especial.")
-
-## Xp ## 
-    def max_xp(self):    
-        return self.xp >= 100
-
-    def cheat_xp(self):
-        self.xp += 100 
-    
-    def level_up(self):
-        if self.max_xp():
-            self.nivel += 1
-            self.xp -= 100 
-        print("╔"+("═" * 57)+"╗") 
-        
-        print("║"+f"Felicidades, {self.nombre},haz subido al nivel {self.nivel}".center(57)+"║")
-        print("╚" + ("═" * 57) + "╝")
-        self.fuerza = self.fuerza + 1
-        self.destreza = self.destreza + 1
-        self.inteligencia = self.inteligencia + 1
-        self.defensa = self.defensa + 1
-
-class Guerrero(Personaje):
-    def __init__(self, base):
-        self.__dict__.update(base.__dict__)
-        self.clase = "Guerrero"
-        self.fuerza += 3
-        self.defensa += 2
-        self.atributo_ataque = "fuerza"
-
-    def habilidad_especial(self):
-        print(f"{self.nombre} Bono de ataque en base a Fuerza")
-
-class Mago(Personaje):
-    def __init__(self, base):
-        self.__dict__.update(base.__dict__)
-        self.clase = "Mago"
-        self.inteligencia += 4
-        self.vida -= 10
-        self.atributo_ataque = "inteligencia"
-
-    def habilidad_especial(self):
-        print(f"{self.nombre} Bono de ataque en base Inteligencia")
-
-class Picaro(Personaje):
-    def __init__(self, base):
-        self.__dict__.update(base.__dict__)
-        self.clase = "Pícaro"
-        self.destreza += 4
-        self.fuerza -= 1
-        self.atributo_ataque = "destreza"
-
-    def habilidad_especial(self):
-        print(f"{self.nombre} Bono de ataque en base Destreza")
-
-def crear_personaje():
-    print("║"+"Ingresa el nombre de tu personaje: ".center(57)+"║")
-    nombre = input("╚" + ("═" * 57) + "╝\n> ")
-    base = Personaje(nombre)
-    clear()
-    base.show_stats()
-    print("╔"+("═" * 57)+"╗")
-    print(f"║Elige una clase:".ljust(58)+"║")
-    #print("Elige una clase:")
-    print("║"+("═" * 57)+"║")
-    print("║ 1 - Guerrero (Fuerza +3, Defensa +2, Bono Fuerza)".ljust(58)+"║")
-    print("║ 2 - Mago (Inteligencia +4, Vida -10, Bono Inteligencia)".ljust(58)+"║")
-    print("║ 3 - Pícaro (Destreza +4, Fuerza -1, Bono Destreza)".ljust(58)+"║")
+#==== Auxiliares ====#
+def elegir_opcion(opciones, tipo):
+    print(f"\nElige una {tipo}:")
+    for i, opcion in enumerate(opciones, 1):
+        print(f"{i}. {opcion['name']}")
 
     while True:
-        opcion = input("╚" + ("═" * 57) + "╝\n> ")
+        try:
+            seleccion = int(input("Opción: ")) - 1
+            if 0 <= seleccion < len(opciones):
+                return opciones[seleccion]
+            print("Opción inválida. Intenta de nuevo.")
+        except ValueError:
+            print("Por favor ingresa un número.")
 
-        if opcion == "1": 
-            print("Tu opción fue Guerrero")
-            return Guerrero(base)
-            break
-        elif opcion == "2": 
-            print("Tu opción fue Mago")
-            return Mago(base)
-            break
-        elif opcion == "3": 
-            print("Tu opción fue Picaro")
-            return Picaro(base)
-            break
-        else:
-            print("Opción inválida, se crea personaje base.")
-    base.show_stats()
+#==== Stats ====#
+def rolear_stats():
+    dados = [random.randint(1, 6) for _ in range(6)]
+    dados.remove(min(dados))
+    return sum(dados)
 
-#pj = crear_personaje()
-#pj.show_stats()
-#pj.habilidad_especial()
+def generar_stats(detalles_raza):
+    stats_base = {
+        'strength': rolear_stats(),
+        'dexterity': rolear_stats(),
+        'constitution': rolear_stats(),
+        'intelligence': rolear_stats(),
+        'wisdom': rolear_stats(),
+        'charisma': rolear_stats(),
+    }
 
+    # bonificaciones de raza
+    for bonus in detalles_raza.get('ability_bonuses', []):
+        habilidad = bonus['ability_score']['name']
+        habilidad = habilidad.lower().replace('-', '_')
+        stats_base[habilidad] = stats_base.get(habilidad, 10) + bonus['bonus']
+
+    return stats_base
+
+#==== Creación ====#
+def crear_personaje_interactivo():
+
+    # API
+    razas = obtener_races()['results']
+    clases = obtener_classes()['results']
+
+    # raza
+    raza_elegida = elegir_opcion(razas, "raza")
+    detalles_raza = obtener_race_detalle(raza_elegida['index'])
+
+    # Clase
+    clase_elegida = elegir_opcion(clases, "clase")
+
+    # Generar stats
+    stats = generar_stats(detalles_raza)
+
+    # nombre
+    nombre = input("\nIngresa el nombre de tu personaje: ")
+
+    # Crear personaje
+    personaje = Personaje(
+        nombre=nombre,
+        raza=raza_elegida['name'],
+        clase=clase_elegida['name'],
+        stats=stats
+    )
+    
+    return personaje
