@@ -1,13 +1,22 @@
 from core.pj import crear_personaje_interactivo
 
 def main():
-    print("=== GENERADOR DE PERSONAJES D&D ===")
+    # Crear personaje interactivamente
+    personaje = crear_personaje_interactivo()
     
-    mi_personaje = crear_personaje_interactivo()
+    print("\n¡Personaje creado exitosamente!")
+    print("=" * 50)
+    print(personaje)
+    print("\n")
+    print(personaje.mostrar_resumen_combate())
     
-    print("\n=== ESTADÍSTICAS FINALES DEL PERSONAJE ===")
-    mi_personaje.show_stats()
+    # Ejemplo de uso del método atacar
+    print(f"\n{personaje.nombre} realiza un ataque causando {personaje.atacar()} puntos de daño!")
     
+    # Ejemplo de creación rápida (opcional)
+    # from core.pj import crear_personaje_rapido
+    # personaje_rapido = crear_personaje_rapido("Frodo")
+    # print(personaje_rapido)
 
 if __name__ == "__main__":
     main()
