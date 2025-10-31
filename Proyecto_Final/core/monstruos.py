@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from api.dnd_api import *
 
-BASE_IMAGE_URL = "https://www.dnd5eapi.co"  # Para completar imágenes relativas
+BASE_IMAGE_URL = "https://www.dnd5eapi.co"  # imagenes
 
 def obtener_monstruos():
     monsters_data = api_obtener_monsters()
@@ -11,7 +11,7 @@ def obtener_monstruos():
     for monster in monsters_data['results']:
         monsters.append({
             'index': monster['index'],
-            'nombre': monster['name']  # Traducción eliminada
+            'nombre': monster['name']
         })
     return monsters
 

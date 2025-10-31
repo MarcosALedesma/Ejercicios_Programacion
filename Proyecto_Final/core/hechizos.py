@@ -9,7 +9,7 @@ def obtener_hechizos():
     for spell in spells_data['results']:
         spells.append({
             'index': spell['index'],
-            'nombre': spell['name']  # Traducción eliminada
+            'nombre': spell['name']  
         })
     return spells
 

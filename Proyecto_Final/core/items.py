@@ -9,7 +9,7 @@ def obtener_equipo():
     for item in equipo_data['results']:
         equipo.append({
             'index': item['index'],
-            'nombre': item['name']  # Traducción eliminada
+            'nombre': item['name'] 
         })
     return equipo
 
@@ -29,7 +29,7 @@ def obtener_objetos_magicos():
     for item in items_data['results']:
         items.append({
             'index': item['index'],
-            'nombre': item['name']  # Traducción eliminada
+            'nombre': item['name']  
         })
     return items
 
