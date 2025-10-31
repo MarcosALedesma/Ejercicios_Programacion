@@ -176,10 +176,10 @@ def main():
     print("=" * 60)
     
     try:
-        #test_pj()
-        #test_items()
-        #test_hechizos()
-        #test_monstruos()
+        test_pj()
+        test_items()
+        test_hechizos()
+        test_monstruos()
         test_daño()
         
         print("\n" + "=" * 60)

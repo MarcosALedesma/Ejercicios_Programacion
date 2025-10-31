@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from api.dnd_api import *
-from core.traductor import traductora
 
 def obtener_monstruos():
     monsters_data = api_obtener_monsters()
@@ -10,17 +9,17 @@ def obtener_monstruos():
     for monster in monsters_data['results']:
         monsters.append({
             'index': monster['index'],
-            'nombre': traductora(monster['name'])
+            'nombre': monster['name']  # Traducción eliminada
         })
     return monsters
 
 def obtener_detalle_monstruo(monster_index):
     detalle = api_obtener_monster_detalle(monster_index)
     return {
-        'nombre': traductora(detalle.get('name', '')),
-        'tamaño': traductora(detalle.get('size', '')),
-        'tipo': traductora(detalle.get('type', '')),
-        'alineamiento': traductora(detalle.get('alignment', '')),
+        'nombre': detalle.get('name', ''),
+        'tamaño': detalle.get('size', ''),
+        'tipo': detalle.get('type', ''),
+        'alineamiento': detalle.get('alignment', ''),
         'clase_de_armadura': detalle.get('armor_class', [{}])[0].get('value', ''),
         'puntos_de_golpe': detalle.get('hit_points', ''),
         'desplazamiento': detalle.get('speed', {}),
@@ -33,7 +32,7 @@ def obtener_detalle_monstruo(monster_index):
             'carisma': detalle.get('charisma', '')
         },
         'acciones': [{
-            'nombre': traductora(action.get('name', '')),
-            'descripcion': traductora(action.get('desc', ''))
+            'nombre': action.get('name', ''),
+            'descripcion': action.get('desc', '')
         } for action in detalle.get('actions', [])]
     }
