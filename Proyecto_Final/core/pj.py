@@ -10,7 +10,7 @@ def obtener_razas():
     for raza in razas_data['results']:
         razas.append({
             'index': raza['index'],
-            'nombre': raza['name']  # Traducción eliminada
+            'nombre': raza['name']  
         })
     return razas
 
@@ -21,7 +21,7 @@ def obtener_detalle_raza(race_index):
         'edad': detalle.get('age', ''),
         'alineamiento': detalle.get('alignment', ''),
         'tamaño': detalle.get('size_description', ''),
-        'descripcion': ', '.join(detalle.get('language_desc', '')),
+        'descripcion': detalle.get('language_desc', ''), 
         'rasgos': [trait['name'] for trait in detalle.get('traits', [])]
     }
 
@@ -31,7 +31,7 @@ def obtener_clases():
     for clase in clases_data['results']:
         clases.append({
             'index': clase['index'],
-            'nombre': clase['name']  # Traducción eliminada
+            'nombre': clase['name']  
         })
     return clases
 
@@ -51,7 +51,7 @@ def obtener_ability_scores():
     for ability in abilities_data['results']:
         abilities.append({
             'index': ability['index'],
-            'nombre': ability['name']  # Traducción eliminada
+            'nombre': ability['name']  
         })
     return abilities
 

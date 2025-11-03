@@ -219,9 +219,9 @@ class CharacterCreatorApp(QWidget):
         competencias = detalle.get('competencias', [])
         if competencias:
             info += "<p><b>Competencias:</b><br>"
-            info += "<br>".join([f"• {comp}" for comp in competencias[:5]])  # Mostrar solo 5
-            if len(competencias) > 5:
-                info += f"<br>• ... y {len(competencias) - 5} más"
+            info += "<br>".join([f"• {comp}" for comp in competencias[:10]])  # Mostrar solo 10 
+            if len(competencias) > 10:
+                info += f"<br>• ... y {len(competencias) - 10} más"
             info += "</p>"
         
         return info
