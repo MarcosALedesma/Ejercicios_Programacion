@@ -5,11 +5,12 @@ import sys
 import os
 import importlib.util
 import requests
-from io import BytesIO
 
 # Importar tus módulos reales
 sys.path.append(os.path.join(os.path.dirname(__file__), 'core'))
 from monstruos import obtener_monstruos, obtener_detalle_monstruo
+from pj import obtener_razas, obtener_clases
+from database import DatabaseManager
 
 class CustomWindow(QMainWindow):
     def __init__(self):
@@ -22,6 +23,7 @@ class CustomWindow(QMainWindow):
         # Módulos cargados
         self.modulos = {}
         self.modulo_actual = None
+        self.db = DatabaseManager()
         
         self.cargar_modulos()
         self.init_ui()
@@ -378,7 +380,7 @@ class CustomWindow(QMainWindow):
     def obtener_nombre_lista(self, modulo):
         """Devuelve el nombre apropiado para la lista según el módulo"""
         nombres = {
-            'Personajes': 'Personajes',
+            'Personajes': 'Jugadores',
             'Bestiario': 'Monstruos', 
             'Equipamiento': 'Items',
             'Hechizos': 'Hechizos',
@@ -451,7 +453,7 @@ class CustomWindow(QMainWindow):
             self.mostrar_en_central(resultado)
         
         # Refrescar lista si es necesario
-        if modulo['nombre'] == 'Personajes' and opcion in ['Eliminar', 'Crear']:
+        if modulo['nombre'] == 'Personajes' and opcion in ['Crear Jugador', 'Crear Personaje']:
             items = self.obtener_lista_modulo(modulo)
             self.actualizar_lista(items)
 
@@ -466,37 +468,25 @@ class CustomWindow(QMainWindow):
         nombre_modulo = modulo['nombre']
         
         if nombre_modulo == 'Bestiario':
-            try:
-                # USANDO TU MÓDULO REAL DE MONSTRUOS
-                monstruos_data = obtener_monstruos()
-                return [monster['nombre'] for monster in monstruos_data]
-            except Exception as e:
-                print(f"Error cargando monstruos: {e}")
-                return ["Error al cargar monstruos"]
+            monstruos_data = obtener_monstruos()
+            return [monster['nombre'] for monster in monstruos_data]
         
-        # Placeholders para otros módulos
-        listas = {
-            'Personajes': ['Aragorn', 'Gandalf', 'Legolas'],
-            'Equipamiento': ['Espada Larga', 'Armadura de Cuero'],
-            'Hechizos': ['Bola de Fuego', 'Curar Heridas'],
-            'Utilidades': ['Calculadora de Daño'],
-            'Reglas': ['Combate', 'Magia']
-        }
-        return listas.get(nombre_modulo, [])
+        elif nombre_modulo == 'Personajes':
+            jugadores = self.db.obtener_jugadores()
+            return [f"{j['nombre_jugador']}" for j in jugadores]
+        
+        return []
 
     def obtener_opciones_modulo(self, modulo):
         """Obtiene opciones específicas por módulo"""
         nombre_modulo = modulo['nombre']
         
-        opciones = {
-            'Personajes': ['Crear Personaje', 'Editar', 'Eliminar'],
-            'Bestiario': ['Actualizar Lista', 'Buscar Monstruo'],
-            'Equipamiento': ['Mostrar Detalles', 'Filtrar'],
-            'Hechizos': ['Mostrar Detalles', 'Buscar por Escuela'],
-            'Utilidades': ['Usar Herramienta'],
-            'Reglas': ['Buscar Regla']
-        }
-        return opciones.get(nombre_modulo, [])
+        if nombre_modulo == 'Personajes':
+            return ['Crear Jugador', 'Crear Personaje']
+        elif nombre_modulo == 'Bestiario':
+            return ['Actualizar Lista']
+        
+        return []
 
     def obtener_vista_default_modulo(self, modulo):
         """Obtiene vista por defecto - Bestiario tiene vista especial"""
@@ -586,26 +576,18 @@ class CustomWindow(QMainWindow):
         nombre_modulo = modulo['nombre']
         
         if nombre_modulo == 'Bestiario':
-            try:
-                # USANDO TU MÓDULO REAL PARA OBTENER DETALLES
-                monstruos_data = obtener_monstruos()
-                monster_index = None
-                for monster in monstruos_data:
-                    if monster['nombre'] == item_nombre:
-                        monster_index = monster['index']
-                        break
-                
-                if monster_index:
+            monstruos_data = obtener_monstruos()
+            for monster in monstruos_data:
+                if monster['nombre'] == item_nombre:
+                    monster_index = monster['index']
                     detalle = obtener_detalle_monstruo(monster_index)
                     return self.crear_ficha_monstruo_detallada(detalle)
-                else:
-                    return self.crear_ficha_monstruo_error(item_nombre)
-                    
-            except Exception as e:
-                print(f"Error cargando detalle de monstruo: {e}")
-                return self.crear_ficha_monstruo_error(item_nombre)
         
-        # Vista genérica para otros módulos
+        elif nombre_modulo == 'Personajes':
+            jugador = self.db.buscar_jugador_por_nombre(item_nombre)
+            if jugador:
+                return self.crear_vista_jugador(jugador)
+        
         return self.crear_vista_generica_detalle(nombre_modulo, item_nombre)
 
     def crear_ficha_monstruo_detallada(self, detalle):
@@ -794,6 +776,420 @@ class CustomWindow(QMainWindow):
         
         return widget
 
+    def crear_vista_jugador(self, jugador):
+        """Crea la vista de un jugador con sus personajes"""
+        widget = QWidget()
+        widget.setStyleSheet("background: #3a3a3a; color: white;")
+        layout = QVBoxLayout(widget)
+        
+        # Scroll area para los personajes
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background: #2c2c2c;
+                width: 15px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #E58D05;
+                border-radius: 7px;
+            }
+        """)
+        
+        content_widget = QWidget()
+        content_layout = QVBoxLayout(content_widget)
+        
+        # Encabezado del jugador
+        header = QLabel(f"JUGADOR: {jugador['nombre_jugador']}")
+        header.setStyleSheet("color: #E58D05; font-size: 24px; font-weight: bold; padding: 10px; text-align: center;")
+        content_layout.addWidget(header)
+        
+        # Información de contacto
+        info_layout = QHBoxLayout()
+        email_label = QLabel(f"Email: {jugador.get('email', 'N/A')}")
+        telefono_label = QLabel(f"Teléfono: {jugador.get('telefono', 'N/A')}")
+        
+        for label in [email_label, telefono_label]:
+            label.setStyleSheet("color: white; padding: 5px;")
+            info_layout.addWidget(label)
+        
+        info_layout.addStretch()
+        content_layout.addLayout(info_layout)
+        
+        # Personajes del jugador
+        personajes = self.db.obtener_personajes_por_jugador(jugador['id'])
+        
+        if personajes:
+            personajes_title = QLabel("PERSONAJES:")
+            personajes_title.setStyleSheet("color: #FFD700; font-weight: bold; font-size: 16px; padding: 10px 0px;")
+            content_layout.addWidget(personajes_title)
+            
+            for pj in personajes:
+                pj_widget = self.crear_tarjeta_personaje(pj)
+                content_layout.addWidget(pj_widget)
+        else:
+            sin_personajes = QLabel("Este jugador no tiene personajes creados")
+            sin_personajes.setStyleSheet("color: #888; font-style: italic; padding: 20px; text-align: center;")
+            content_layout.addWidget(sin_personajes)
+        
+        content_layout.addStretch()
+        scroll.setWidget(content_widget)
+        layout.addWidget(scroll)
+        
+        return widget
+
+    def crear_tarjeta_personaje(self, personaje):
+        """Crea una tarjeta para mostrar un personaje"""
+        widget = QWidget()
+        widget.setStyleSheet("""
+            background: #45484A;
+            border: 1px solid #E58D05;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px;
+        """)
+        layout = QVBoxLayout(widget)
+        
+        # Información principal
+        info_principal = QLabel(f"{personaje['nombre_personaje']} - Nivel {personaje['nivel']} {personaje['raza']} {personaje['clase']}")
+        info_principal.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
+        layout.addWidget(info_principal)
+        
+        # Características en línea
+        stats_layout = QHBoxLayout()
+        
+        stats = [
+            ("FUE", personaje.get('fuerza', 0)),
+            ("DES", personaje.get('destreza', 0)),
+            ("CON", personaje.get('constitucion', 0)),
+            ("INT", personaje.get('inteligencia', 0)),
+            ("SAB", personaje.get('sabiduria', 0)),
+            ("CAR", personaje.get('carisma', 0))
+        ]
+        
+        for abrev, valor in stats:
+            stat_widget = QWidget()
+            stat_layout = QVBoxLayout(stat_widget)
+            
+            stat_label = QLabel(abrev)
+            stat_label.setStyleSheet("color: #E58D05; font-size: 10px; text-align: center;")
+            
+            stat_valor = QLabel(str(valor))
+            stat_valor.setStyleSheet("color: white; font-weight: bold; font-size: 12px; text-align: center;")
+            
+            # Calcular modificador
+            modificador = (valor - 10) // 2
+            mod_label = QLabel(f"{modificador:+d}")
+            mod_label.setStyleSheet("color: #90EE90; font-size: 10px; text-align: center;")
+            
+            stat_layout.addWidget(stat_label)
+            stat_layout.addWidget(stat_valor)
+            stat_layout.addWidget(mod_label)
+            stat_layout.setContentsMargins(2, 2, 2, 2)
+            
+            stats_layout.addWidget(stat_widget)
+        
+        layout.addLayout(stats_layout)
+        
+        # Puntos de golpe
+        hp_label = QLabel(f"PG: {personaje.get('puntos_golpe_actuales', 0)}/{personaje.get('puntos_golpe_max', 0)}")
+        hp_label.setStyleSheet("color: #FF6B6B; font-size: 12px;")
+        layout.addWidget(hp_label)
+        
+        # Botón eliminar
+        btn_eliminar = QPushButton("Eliminar")
+        btn_eliminar.setStyleSheet("""
+            QPushButton {
+                background-color: #FF6B6B;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+            QPushButton:hover {
+                background-color: #FF5252;
+            }
+        """)
+        btn_eliminar.clicked.connect(lambda checked, p=personaje: self.eliminar_personaje(p))
+        layout.addWidget(btn_eliminar)
+        
+        return widget
+
+    def crear_formulario_jugador(self):
+        """Crea formulario simple para crear jugador"""
+        widget = QWidget()
+        widget.setStyleSheet("background: #3a3a3a; color: white; padding: 20px;")
+        layout = QVBoxLayout(widget)
+        
+        titulo = QLabel("NUEVO JUGADOR")
+        titulo.setStyleSheet("color: #E58D05; font-size: 20px; font-weight: bold; padding: 10px; text-align: center;")
+        layout.addWidget(titulo)
+        
+        # Formulario simple
+        form_layout = QVBoxLayout()
+        
+        self.nombre_jugador_input = QLineEdit()
+        self.nombre_jugador_input.setPlaceholderText("Nombre del jugador")
+        
+        self.email_jugador_input = QLineEdit()
+        self.email_jugador_input.setPlaceholderText("Email (opcional)")
+        
+        self.telefono_jugador_input = QLineEdit()
+        self.telefono_jugador_input.setPlaceholderText("Teléfono (opcional)")
+        
+        for campo in [self.nombre_jugador_input, self.email_jugador_input, self.telefono_jugador_input]:
+            campo.setStyleSheet("background: #2c2c2c; color: white; border: 1px solid #E58D05; padding: 8px; margin: 5px;")
+            form_layout.addWidget(campo)
+        
+        layout.addLayout(form_layout)
+        
+        # Botón guardar
+        btn_guardar = QPushButton("Guardar Jugador")
+        btn_guardar.setStyleSheet("""
+            QPushButton {
+                background-color: #E58D05;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 10px;
+                font-size: 14px;
+                font-weight: bold;
+                margin: 10px;
+            }
+            QPushButton:hover {
+                background-color: #8B4513;
+            }
+        """)
+        btn_guardar.clicked.connect(self.guardar_jugador)
+        layout.addWidget(btn_guardar)
+        
+        layout.addStretch()
+        return widget
+
+    def crear_formulario_personaje(self):
+        """Crea formulario completo para personaje con stats editables"""
+        widget = QWidget()
+        widget.setStyleSheet("background: #3a3a3a; color: white; padding: 20px;")
+        layout = QVBoxLayout(widget)
+        
+        titulo = QLabel("NUEVO PERSONAJE")
+        titulo.setStyleSheet("color: #E58D05; font-size: 20px; font-weight: bold; padding: 10px; text-align: center;")
+        layout.addWidget(titulo)
+        
+        # Scroll area para el formulario completo
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background: #2c2c2c;
+                width: 15px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #E58D05;
+                border-radius: 7px;
+            }
+        """)
+        
+        form_widget = QWidget()
+        form_layout = QVBoxLayout(form_widget)
+        
+        # Campos básicos
+        basic_layout = QGridLayout()
+        
+        self.nombre_pj_input = QLineEdit()
+        self.nivel_pj_input = QSpinBox()
+        self.nivel_pj_input.setRange(1, 20)
+        self.nivel_pj_input.setValue(1)
+        
+        # Selección de jugador
+        jugadores = self.db.obtener_jugadores()
+        self.jugador_pj_combo = QComboBox()
+        self.jugador_pj_combo.addItems([j['nombre_jugador'] for j in jugadores])
+        
+        # Razas y clases
+        razas = obtener_razas()
+        clases = obtener_clases()
+        
+        self.raza_pj_combo = QComboBox()
+        self.raza_pj_combo.addItems([raza['nombre'] for raza in razas])
+        
+        self.clase_pj_combo = QComboBox()
+        self.clase_pj_combo.addItems([clase['nombre'] for clase in clases])
+        
+        # Campos básicos del formulario
+        campos_basicos = [
+            ("Jugador:", self.jugador_pj_combo),
+            ("Nombre:", self.nombre_pj_input),
+            ("Raza:", self.raza_pj_combo),
+            ("Clase:", self.clase_pj_combo),
+            ("Nivel:", self.nivel_pj_input)
+        ]
+        
+        for i, (label, campo) in enumerate(campos_basicos):
+            lbl = QLabel(label)
+            lbl.setStyleSheet("color: #E58D05; font-weight: bold;")
+            campo.setStyleSheet("background: #2c2c2c; color: white; border: 1px solid #E58D05; padding: 5px;")
+            basic_layout.addWidget(lbl, i, 0)
+            basic_layout.addWidget(campo, i, 1)
+        
+        form_layout.addLayout(basic_layout)
+        
+        # Sección de características
+        stats_title = QLabel("CARACTERISTICAS")
+        stats_title.setStyleSheet("color: #FFD700; font-weight: bold; font-size: 16px; padding: 20px 0px 10px 0px;")
+        form_layout.addWidget(stats_title)
+        
+        stats_layout = QGridLayout()
+        
+        # Crear inputs para cada característica
+        self.fuerza_input = QSpinBox()
+        self.destreza_input = QSpinBox()
+        self.constitucion_input = QSpinBox()
+        self.inteligencia_input = QSpinBox()
+        self.sabiduria_input = QSpinBox()
+        self.carisma_input = QSpinBox()
+        
+        stats_inputs = [
+            ("Fuerza:", self.fuerza_input),
+            ("Destreza:", self.destreza_input),
+            ("Constitucion:", self.constitucion_input),
+            ("Inteligencia:", self.inteligencia_input),
+            ("Sabiduria:", self.sabiduria_input),
+            ("Carisma:", self.carisma_input)
+        ]
+        
+        # Configurar los spinboxes
+        for spinbox in [self.fuerza_input, self.destreza_input, self.constitucion_input,
+                       self.inteligencia_input, self.sabiduria_input, self.carisma_input]:
+            spinbox.setRange(1, 20)
+            spinbox.setValue(10)
+            spinbox.setStyleSheet("background: #2c2c2c; color: white; border: 1px solid #E58D05; padding: 5px;")
+        
+        # Agregar al layout
+        for i, (label, input_field) in enumerate(stats_inputs):
+            lbl = QLabel(label)
+            lbl.setStyleSheet("color: #E58D05; font-weight: bold;")
+            stats_layout.addWidget(lbl, i//2, (i%2)*2)
+            stats_layout.addWidget(input_field, i//2, (i%2)*2+1)
+        
+        form_layout.addLayout(stats_layout)
+        
+        # Puntos de golpe
+        hp_layout = QHBoxLayout()
+        hp_label = QLabel("Puntos de Golpe:")
+        hp_label.setStyleSheet("color: #E58D05; font-weight: bold;")
+        
+        self.pg_max_input = QSpinBox()
+        self.pg_max_input.setRange(1, 200)
+        self.pg_max_input.setValue(6)
+        self.pg_max_input.setStyleSheet("background: #2c2c2c; color: white; border: 1px solid #E58D05; padding: 5px;")
+        
+        self.pg_actual_input = QSpinBox()
+        self.pg_actual_input.setRange(0, 200)
+        self.pg_actual_input.setValue(6)
+        self.pg_actual_input.setStyleSheet("background: #2c2c2c; color: white; border: 1px solid #E58D05; padding: 5px;")
+        
+        hp_layout.addWidget(hp_label)
+        hp_layout.addWidget(QLabel("Max:"))
+        hp_layout.addWidget(self.pg_max_input)
+        hp_layout.addWidget(QLabel("Actual:"))
+        hp_layout.addWidget(self.pg_actual_input)
+        hp_layout.addStretch()
+        
+        form_layout.addLayout(hp_layout)
+        
+        form_layout.addStretch()
+        
+        # Botón guardar
+        btn_guardar = QPushButton("Crear Personaje")
+        btn_guardar.setStyleSheet("""
+            QPushButton {
+                background-color: #E58D05;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 10px;
+                font-size: 14px;
+                font-weight: bold;
+                margin: 10px;
+            }
+            QPushButton:hover {
+                background-color: #8B4513;
+            }
+        """)
+        btn_guardar.clicked.connect(self.guardar_personaje)
+        form_layout.addWidget(btn_guardar)
+        
+        scroll.setWidget(form_widget)
+        layout.addWidget(scroll)
+        
+        return widget
+
+    def guardar_jugador(self):
+        """Guarda nuevo jugador"""
+        jugador = {
+            'nombre': self.nombre_jugador_input.text(),
+            'email': self.email_jugador_input.text(),
+            'telefono': self.telefono_jugador_input.text()
+        }
+        
+        if jugador['nombre']:
+            if self.db.guardar_jugador(jugador):
+                items = self.obtener_lista_modulo({'nombre': 'Personajes'})
+                self.actualizar_lista(items)
+                
+                success_label = QLabel("Jugador creado exitosamente")
+                success_label.setAlignment(Qt.AlignCenter)
+                success_label.setStyleSheet("color: #90EE90; font-size: 16px; padding: 20px;")
+                self.mostrar_en_central(success_label)
+
+    def guardar_personaje(self):
+        """Guarda nuevo personaje con características editables"""
+        nombre_jugador = self.jugador_pj_combo.currentText()
+        jugador = self.db.buscar_jugador_por_nombre(nombre_jugador)
+        
+        if jugador and self.nombre_pj_input.text():
+            personaje = {
+                'nombre_personaje': self.nombre_pj_input.text(),
+                'raza': self.raza_pj_combo.currentText(),
+                'clase': self.clase_pj_combo.currentText(),
+                'nivel': self.nivel_pj_input.value(),
+                'fuerza': self.fuerza_input.value(),
+                'destreza': self.destreza_input.value(),
+                'constitucion': self.constitucion_input.value(),
+                'inteligencia': self.inteligencia_input.value(),
+                'sabiduria': self.sabiduria_input.value(),
+                'carisma': self.carisma_input.value(),
+                'puntos_golpe_max': self.pg_max_input.value(),
+                'puntos_golpe_actuales': self.pg_actual_input.value(),
+                'jugador_id': jugador['id']
+            }
+            
+            if self.db.guardar_personaje(personaje):
+                # Actualizar vista del jugador
+                vista_actual = self.crear_vista_jugador(jugador)
+                self.mostrar_en_central(vista_actual)
+
+    def eliminar_personaje(self, personaje):
+        """Elimina personaje y actualiza vista"""
+        jugador_id = personaje['jugador_id']
+        if self.db.eliminar_personaje(personaje['id']):
+            jugador = self.db.buscar_jugador_por_nombre(personaje['nombre_jugador'])
+            if jugador:
+                vista_actual = self.crear_vista_jugador(jugador)
+                self.mostrar_en_central(vista_actual)
+
     def crear_ficha_monstruo_error(self, nombre_monstruo):
         """Crea una ficha de error cuando no se puede cargar el monstruo"""
         widget = QWidget()
@@ -828,16 +1224,17 @@ class CustomWindow(QMainWindow):
         nombre_modulo = modulo['nombre']
         
         if nombre_modulo == 'Bestiario' and opcion == 'Actualizar Lista':
-            # Actualizar lista de monstruos
             items = self.obtener_lista_modulo(modulo)
             self.actualizar_lista(items)
             return None
         
-        # Para otras opciones, mostrar mensaje
-        label = QLabel(f"Ejecutando: {opcion}\n\nModulo: {nombre_modulo}")
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("color: white; font-size: 16px; padding: 20px; background: #45484A; border-radius: 10px;")
-        return label
+        elif nombre_modulo == 'Personajes':
+            if opcion == 'Crear Jugador':
+                return self.crear_formulario_jugador()
+            elif opcion == 'Crear Personaje':
+                return self.crear_formulario_personaje()
+        
+        return None
 
     # --- MÉTODOS DEL CRONÓMETRO ---
     
