@@ -29,6 +29,7 @@ def obtener_detalle_monstruo(monster_index):
         'alineamiento': detalle.get('alignment', ''),
         'clase_de_armadura': detalle.get('armor_class', [{}])[0].get('value', ''),
         'puntos_de_golpe': detalle.get('hit_points', ''),
+        'cr': detalle.get('challenge_rating', ''), 
         'desplazamiento': detalle.get('speed', {}),
         'caracteristicas': {
             'fuerza': detalle.get('strength', ''),

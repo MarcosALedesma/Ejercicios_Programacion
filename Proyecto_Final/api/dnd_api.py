@@ -56,6 +56,14 @@ def api_obtener_damage_detalle(damage_index):
     return requests.get(f"{BASE_URL}/damage-types/{damage_index}").json()
 
 
+#===== CONDICIONES / ESTADOS =====#
+
+def api_obtener_conditions():
+    return requests.get(f"{BASE_URL}/conditions").json()
+
+def api_obtener_condition_detalle(condition_index):
+    return requests.get(f"{BASE_URL}/conditions/{condition_index}").json()
+
 
 #===== HECHIZOS =====#
 
@@ -77,3 +85,14 @@ def api_obtener_monsters():
 
 def api_obtener_monster_detalle(monster_index):
     return requests.get(f"{BASE_URL}/monsters/{monster_index}").json()
+
+#===== REGLAS =====#
+
+def api_obtener_reglas():
+    return requests.get(f"{BASE_URL}/rule-sections").json()
+
+def api_obtener_categorias_reglas():
+    return requests.get(f"{BASE_URL}/rules").json()
+
+def api_obtener_regla_detalle(rule_index):
+    return requests.get(f"{BASE_URL}/rules/{rule_index}").json()
